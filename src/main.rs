@@ -1,3 +1,7 @@
+
+
+
+
 use futures::StreamExt;
 use libp2p::{
     gossipsub,
@@ -18,6 +22,9 @@ struct GhostBehaviour {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+
+let mut connected_peers: usize = 0;
+
     // ---- Identity ----
     let id_keys = identity::Keypair::generate_ed25519();
     let peer_id = PeerId::from(id_keys.public());
@@ -65,10 +72,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         tokio::select! {
             line = stdin.next_line() => {
                 if let Ok(Some(msg)) = line {
-                    swarm
-                        .behaviour_mut()
-                        .gossipsub
-                        .publish(topic.clone(), msg.into_bytes())?;
+               if connected_peers == 0 {
+    println!("No peers connected yet. Message not sent.");
+} else {
+    if let Err(e) = swarm
+        .behaviour_mut()
+        .gossipsub
+        .publish(topic.clone(), msg.into_bytes())
+    {
+        println!("Failed to send message: {:?}", e);
+    }
+}
+
                 }
             }
 
@@ -89,26 +104,39 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     GhostBehaviourEvent::Mdns(
-        mdns::Event::Discovered(peers)
-    ) => {
-        for (peer, _) in peers {
-            swarm
-                .behaviour_mut()
-                .gossipsub
-                .add_explicit_peer(&peer);
-        }
+    mdns::Event::Discovered(peers)
+) => {
+    for (peer, _) in peers {
+        swarm
+            .behaviour_mut()
+            .gossipsub
+            .add_explicit_peer(&peer);
+
+        connected_peers += 1;
+        println!("Peer connected: {peer}");
+        println!("Connected peers: {connected_peers}");
     }
+}
+
 
     GhostBehaviourEvent::Mdns(
-        mdns::Event::Expired(peers)
-    ) => {
-        for (peer, _) in peers {
-            swarm
-                .behaviour_mut()
-                .gossipsub
-                .remove_explicit_peer(&peer);
+    mdns::Event::Expired(peers)
+) => {
+    for (peer, _) in peers {
+        swarm
+            .behaviour_mut()
+            .gossipsub
+            .remove_explicit_peer(&peer);
+
+        if connected_peers > 0 {
+            connected_peers -= 1;
         }
+
+        println!("Peer disconnected: {peer}");
+        println!("Connected peers: {connected_peers}");
     }
+}
+
 } ,
                 _ => {}
             }
