@@ -14,7 +14,7 @@ Install Rust first
 
 ```bash
 git clone https://github.com/shreyas-sridhar/HAM-Chat.git
-cd ghostlink
+cd HAM-Chat
 ```
 
 ### Build
