@@ -1,0 +1,11 @@
+check loan app 
+instead of manual write a prompt AI checks it 
+
+ex a loan name dob mention 
+match with aadhar and checkpass by GPT
+dual name affidavit or check
+if present and matches the DNA then pass else reject 
+
+... 
+
+Prompt: 
